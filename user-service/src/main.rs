@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool, Pool};
 use dotenv::dotenv;
 use serde_json::json;
+use log;
+use pretty_env_logger;
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct User {
@@ -12,8 +15,6 @@ struct User {
 
 #[post("/adduser")]
 async fn add_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Responder {
-    println!("POST: /adduser");
-
     let user_new = req.into_inner();
     let tx = db_pool.get_ref();
 
@@ -54,7 +55,6 @@ async fn add_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Resp
 
 #[get("/getuser/{name}")]
 async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl Responder {
-    println!("GET: /getuser/[name]");
 
     let new_pool = db_pool.get_ref();
     let user_name = name.to_string();
@@ -86,7 +86,6 @@ async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl R
 
 #[put("/updateuser")]
 async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Responder {
-    println!("PUT: /updateuser");
 
     let new_pool = db_pool.get_ref();
     let user_name = req.username.to_string();
@@ -128,6 +127,7 @@ async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    pretty_env_logger::init();
     dotenv().ok();
     let db_pool = make_db_pool().await;
     
