@@ -1,5 +1,5 @@
 [package]
-name = "rust-webservices-demo"
+name = "user-service"
 version = "0.1.0"
 edition = "2021"
 
