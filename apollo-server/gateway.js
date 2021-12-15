@@ -28,12 +28,11 @@ function get_service_url(service_name, port) {
 
 const gateway = new ApolloGateway({
   serviceList: [
-    { name: "planets-service", url: get_service_url("planets-service", 8001) },
+    { name: "user-service", url: get_service_url("user-service", 8001) },
     {
-      name: "satellites-service",
-      url: get_service_url("satellites-service", 8002),
+      name: "books-service",
+      url: get_service_url("books-service", 8002),
     },
-    { name: "auth-service", url: get_service_url("auth-service", 8003) },
   ],
   buildService({ name, url }) {
     return new AuthenticatedDataSource({ url });
