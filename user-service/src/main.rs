@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder,Error, HttpRequest};
+use actix_web::{get, post, put, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, PgPool, Pool};
 use dotenv::dotenv;
@@ -84,6 +84,48 @@ async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl R
     HttpResponse::Ok().json(res)
 }
 
+#[put("/updateuser")]
+async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Responder {
+    println!("PUT: /updateuser");
+
+    let new_pool = db_pool.get_ref();
+    let user_name = req.username.to_string();
+    let full_name = req.fullname.to_string();
+
+    let _row = query!(
+        r#"
+        UPDATE users set fullname = $1 where username = $2
+        "#,
+        full_name,
+        user_name
+    )
+    .execute(new_pool)
+    .await;
+
+    let res = match _row {
+        Err(_) => {
+            json!({
+                "status": "error",
+                "message": "Could not update the user details. Please try again later."
+            })
+        },
+        Ok(1) => {
+            json!({
+                "status": "ok",
+                "message": "User details updated Successfully!"
+            })
+        },
+        Ok(_) => {
+            json!({
+                "status": "error",
+                "message": "Could not update the user details. Please try again later."
+            })
+        }
+    };
+
+    HttpResponse::Ok().json(res)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -94,6 +136,7 @@ async fn main() -> std::io::Result<()> {
             .data(db_pool.clone())
             .service(add_user)
             .service(get_user)
+            .service(update_user)
     })
     .bind("127.0.0.1:8080")?
     .run()
