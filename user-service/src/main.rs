@@ -1,7 +1,5 @@
 use actix_web::{get, post, put, web, App, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
-use log;
-use pretty_env_logger;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{query, query_as, PgPool, Pool};
