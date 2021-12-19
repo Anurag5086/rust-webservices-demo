@@ -121,9 +121,9 @@ async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    pretty_env_logger::init();
     dotenv().ok();
     let db_pool = make_db_pool().await;
+    println!("Server Started at port: 8080");
 
     HttpServer::new(move || {
         App::new()

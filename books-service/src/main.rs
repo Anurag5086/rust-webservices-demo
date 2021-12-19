@@ -121,6 +121,7 @@ async fn add_book(req: web::Json<UserBooks>, db_pool: web::Data<PgPool>) -> impl
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let db_pool = make_db_pool().await;
+    println!("Server Started at port: 8081");
 
     HttpServer::new(move || {
         App::new()
