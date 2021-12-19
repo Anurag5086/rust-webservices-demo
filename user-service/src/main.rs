@@ -1,16 +1,15 @@
 use actix_web::{get, post, put, web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, PgPool, Pool};
 use dotenv::dotenv;
-use serde_json::json;
 use log;
 use pretty_env_logger;
-
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use sqlx::{query, query_as, PgPool, Pool};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct User {
     username: String,
-    fullname: String
+    fullname: String,
 }
 
 #[post("/adduser")]
@@ -35,13 +34,13 @@ async fn add_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Resp
                 "status": "error",
                 "message": "User already exists!"
             })
-        },
+        }
         Ok(1) => {
             json!({
                 "status": "ok",
                 "message": "User created Successfully!"
             })
-        },
+        }
         Ok(_) => {
             json!({
                 "status": "error",
@@ -55,11 +54,11 @@ async fn add_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Resp
 
 #[get("/getuser/{name}")]
 async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl Responder {
-
     let new_pool = db_pool.get_ref();
     let user_name = name.to_string();
 
-    let _row = query_as!(User,
+    let _row = query_as!(
+        User,
         r#"
         SELECT username, fullname from users WHERE username = $1
         "#,
@@ -73,11 +72,9 @@ async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl R
             json!({
                 "error": "User not found!"
             })
-        },
+        }
         Ok(user) => {
-            json!(
-                user
-            )
+            json!(user)
         }
     };
 
@@ -86,7 +83,6 @@ async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl R
 
 #[put("/updateuser")]
 async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Responder {
-
     let new_pool = db_pool.get_ref();
     let user_name = req.username.to_string();
     let full_name = req.fullname.to_string();
@@ -107,13 +103,13 @@ async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl R
                 "status": "error",
                 "message": "Could not update the user details. Please try again later."
             })
-        },
+        }
         Ok(1) => {
             json!({
                 "status": "ok",
                 "message": "User details updated Successfully!"
             })
-        },
+        }
         Ok(_) => {
             json!({
                 "status": "error",
@@ -130,7 +126,7 @@ async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
     dotenv().ok();
     let db_pool = make_db_pool().await;
-    
+
     HttpServer::new(move || {
         App::new()
             .data(db_pool.clone())
