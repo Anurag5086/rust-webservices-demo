@@ -138,7 +138,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 pub async fn make_db_pool() -> PgPool {
-    let db_url = std::env::var("DATABASE_URL").unwrap();
+    let db_url = std::env::var("postgres://postgres:5086@localhost/postgres").unwrap();
     println!("Connected to database: {}", db_url);
     Pool::new(&db_url).await.unwrap()
 }
