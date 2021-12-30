@@ -1,5 +1,6 @@
 use actix_web::{get, post, put, web, App, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
+use nats;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{query, query_as, PgPool, Pool};
@@ -54,6 +55,9 @@ async fn add_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl Resp
 async fn get_user(name: web::Path<String>, db_pool: web::Data<PgPool>) -> impl Responder {
     let new_pool = db_pool.get_ref();
     let user_name = name.to_string();
+
+    let nc = nats::connect("localhost:4222").unwrap();
+    nc.publish("get.user", user_name.clone()).unwrap();
 
     let _row = query_as!(
         User,
@@ -119,7 +123,16 @@ async fn update_user(req: web::Json<User>, db_pool: web::Data<PgPool>) -> impl R
     HttpResponse::Ok().json(res)
 }
 
-#[actix_web::main]
+#[get("/publish/{message}")]
+async fn publish_nats(message: web::Path<String>) -> impl Responder {
+    let msg = message.to_string();
+    let nc = nats::connect("localhost:4222").unwrap();
+    nc.publish("testdemo", msg).unwrap();
+
+    HttpResponse::Ok()
+}
+
+#[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let db_pool = make_db_pool().await;
@@ -131,6 +144,7 @@ async fn main() -> std::io::Result<()> {
             .service(add_user)
             .service(get_user)
             .service(update_user)
+            .service(publish_nats)
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -138,7 +152,12 @@ async fn main() -> std::io::Result<()> {
 }
 
 pub async fn make_db_pool() -> PgPool {
-    let db_url = std::env::var("postgres://postgres:5086@localhost/postgres").unwrap();
-    println!("Connected to database: {}", db_url);
-    Pool::new(&db_url).await.unwrap()
+    // let db_url = std::env::var("postgres://postgres:5086@localhost/postgres").unwrap();
+    println!(
+        "Connected to database: {}",
+        "postgres://postgres:5086@localhost/postgres"
+    );
+    Pool::new("postgres://postgres:5086@localhost/postgres")
+        .await
+        .unwrap()
 }

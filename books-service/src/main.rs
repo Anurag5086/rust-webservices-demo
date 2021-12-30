@@ -1,8 +1,11 @@
+use actix_rt;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
+use nats::{self, Connection, Subscription};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{query, query_as, PgPool, Pool};
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct UserBooks {
@@ -117,11 +120,26 @@ async fn add_book(req: web::Json<UserBooks>, db_pool: web::Data<PgPool>) -> impl
     HttpResponse::Ok().json(res)
 }
 
-#[actix_web::main]
+async fn nats_get_user(nc: Connection) {
+    let sub_user = nc.subscribe("get.user").unwrap();
+    for msg in sub_user.messages() {
+        let s = match std::str::from_utf8(&msg.data) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+        };
+
+        println!("{:?}", s);
+    }
+}
+
+#[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let db_pool = make_db_pool().await;
     println!("Server Started at port: 8081");
+
+    let nc = nats::connect("localhost:4222").unwrap();
+    nats_get_user(nc.clone()).await;
 
     HttpServer::new(move || {
         App::new()
@@ -136,7 +154,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 pub async fn make_db_pool() -> PgPool {
-    let db_url = std::env::var("postgres://postgres:5086@localhost/postgres").unwrap();
+    let db_url = "postgres://postgres:5086@localhost/postgres";
     println!("Connected to database: {}", db_url);
-    Pool::new(&db_url).await.unwrap()
+    Pool::new(db_url).await.unwrap()
 }
